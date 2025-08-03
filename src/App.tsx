@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { PlansData, RoutePlanRow, RouteData, Technician, Vehicle } from './types';
 import { TECHNICIANS, VEHICLES, INITIAL_PLANS } from './constants';
@@ -26,11 +25,10 @@ import { SettingsIcon } from './components/icons/SettingsIcon';
 import { SaveIcon } from './components/icons/SaveIcon';
 import { DownloadIcon } from './components/icons/DownloadIcon';
 import { LogoutIcon } from './components/icons/LogoutIcon';
+import moment from 'moment';
+import 'moment/locale/pt-br';
 
-
-declare const moment: any;
-
-// Set the locale globally for the entire application
+// Configura o Moment.js para português do Brasil
 moment.locale('pt-br');
 
 const MAP_NAMES: { [key: string]: string } = {
@@ -263,14 +261,12 @@ const App: React.FC = () => {
     const weekKey = currentDate.format('YYYY-WW');
     const updatedPlan = activePlan.map(row => {
       if (row.id === routeId && row.type === 'route') {
-        // Clear daily assignments for the week
         const newAssignments = { ...row.assignments };
         for (let i = 0; i < 5; i++) {
           const dateKey = currentDate.clone().startOf('isoWeek').add(i, 'days').format('YYYY-MM-DD');
           delete newAssignments[dateKey];
         }
 
-        // Clear weekly data for the week
         const newWeeklyData = { ...row.weeklyData };
         delete newWeeklyData[weekKey];
 
@@ -302,29 +298,17 @@ const App: React.FC = () => {
 
   const handlePrevPeriod = () => {
     switch (viewMode) {
-      case 'weekly':
-        setCurrentDate(currentDate.clone().subtract(1, 'week'));
-        break;
-      case 'monthly':
-        setCurrentDate(currentDate.clone().subtract(1, 'month'));
-        break;
-      case 'yearly':
-        setCurrentDate(currentDate.clone().subtract(1, 'year'));
-        break;
+      case 'weekly': setCurrentDate(currentDate.clone().subtract(1, 'week')); break;
+      case 'monthly': setCurrentDate(currentDate.clone().subtract(1, 'month')); break;
+      case 'yearly': setCurrentDate(currentDate.clone().subtract(1, 'year')); break;
     }
   };
 
   const handleNextPeriod = () => {
     switch (viewMode) {
-      case 'weekly':
-        setCurrentDate(currentDate.clone().add(1, 'week'));
-        break;
-      case 'monthly':
-        setCurrentDate(currentDate.clone().add(1, 'month'));
-        break;
-      case 'yearly':
-        setCurrentDate(currentDate.clone().add(1, 'year'));
-        break;
+      case 'weekly': setCurrentDate(currentDate.clone().add(1, 'week')); break;
+      case 'monthly': setCurrentDate(currentDate.clone().add(1, 'month')); break;
+      case 'yearly': setCurrentDate(currentDate.clone().add(1, 'year')); break;
     }
   };
 
@@ -334,10 +318,8 @@ const App: React.FC = () => {
         const startOfWeek = currentDate.clone().startOf('isoWeek');
         const endOfWeek = startOfWeek.clone().add(4, 'days');
         return `Período: ${startOfWeek.format('DD/MM')} a ${endOfWeek.format('DD/MM')}`;
-      case 'monthly':
-        return currentDate.format('MMMM [de] YYYY');
-      case 'yearly':
-        return currentDate.format('YYYY');
+      case 'monthly': return currentDate.format('MMMM [de] YYYY');
+      case 'yearly': return currentDate.format('YYYY');
     }
   };
 
@@ -345,7 +327,6 @@ const App: React.FC = () => {
     if (viewMode !== 'weekly' || !hideEmptyRows) {
       return activePlan;
     }
-
     const hasAssignmentsThisWeek = (route: RouteData) => {
       for (let i = 0; i < 5; i++) {
         const dateKey = currentDate.clone().startOf('isoWeek').add(i, 'days').format('YYYY-MM-DD');
@@ -355,14 +336,10 @@ const App: React.FC = () => {
       }
       return false;
     }
-
     const visibleRouteIds = new Set(activePlan.filter(row => row.type === 'route' && hasAssignmentsThisWeek(row as RouteData)).map(r => r.id));
-
     if (visibleRouteIds.size === 0 && activePlan.some(r => r.type === 'route')) return [];
-
     const visibleGroupIds = new Set<string>();
     let currentGroupId: string | null = null;
-
     activePlan.forEach(row => {
       if (row.type === 'group') {
         currentGroupId = row.id;
@@ -370,14 +347,9 @@ const App: React.FC = () => {
         visibleGroupIds.add(currentGroupId);
       }
     });
-
     return activePlan.filter(row => {
-      if (row.type === 'group') {
-        return visibleGroupIds.has(row.id);
-      }
-      if (row.type === 'route') {
-        return visibleRouteIds.has(row.id);
-      }
+      if (row.type === 'group') return visibleGroupIds.has(row.id);
+      if (row.type === 'route') return visibleRouteIds.has(row.id);
       return false;
     });
   }
@@ -407,37 +379,6 @@ const App: React.FC = () => {
         </>
       );
     }
-
-    if (viewMode === 'monthly') {
-      return (
-        <>
-          <button onClick={() => exportMonthlyAsImage(monthlyCalendarRef.current, activeMapName, currentDate)} className="flex items-center gap-2 p-2 bg-white rounded-lg hover:bg-slate-50 transition-colors shadow border border-slate-200" aria-label="Baixar como Imagem">
-            <DownloadIcon />
-            <span className="hidden sm:inline text-sm font-semibold text-slate-700">PNG</span>
-          </button>
-          <button onClick={() => exportMonthlyToPdfFromImage(monthlyCalendarRef.current, activeMapName, currentDate)} className="p-2 bg-white rounded-lg hover:bg-slate-50 transition-colors shadow border border-slate-200" aria-label="Exportar PDF Mensal">
-            <PdfIcon />
-          </button>
-          <button onClick={() => exportMonthlyToXlsx(activePlan, technicians, vehicles, currentDate, activeMapName)} className="p-2 bg-white rounded-lg hover:bg-slate-50 transition-colors shadow border border-slate-200" aria-label="Exportar Excel Mensal">
-            <ExcelIcon />
-          </button>
-        </>
-      );
-    }
-
-    if (viewMode === 'yearly') {
-      return (
-        <>
-          <button onClick={() => exportAnnualToPdf(activePlan, technicians, currentDate, activeMapName)} className="p-2 bg-white rounded-lg hover:bg-slate-50 transition-colors shadow border border-slate-200" aria-label="Exportar PDF Anual">
-            <PdfIcon />
-          </button>
-          <button onClick={() => exportAnnualToXlsx(activePlan, technicians, vehicles, currentDate, activeMapName)} className="p-2 bg-white rounded-lg hover:bg-slate-50 transition-colors shadow border border-slate-200" aria-label="Exportar Excel Anual">
-            <ExcelIcon />
-          </button>
-        </>
-      )
-    }
-
     return null;
   };
   
@@ -524,24 +465,7 @@ const App: React.FC = () => {
 
           {viewMode === 'monthly' && (
             <div className="flex flex-wrap items-center gap-4 mb-4">
-              <label className="flex items-center gap-2 text-sm text-slate-600 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={monthlyViewSettings.expandDays}
-                  onChange={(e) => setMonthlyViewSettings(prev => ({ ...prev, expandDays: e.target.checked }))}
-                  className="rounded border-slate-400 text-indigo-600 focus:ring-indigo-500"
-                />
-                Expandir todos os dias
-              </label>
-              <label className="flex items-center gap-2 text-sm text-slate-600 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={monthlyViewSettings.hideEmptyWeeks}
-                  onChange={(e) => setMonthlyViewSettings(prev => ({ ...prev, hideEmptyWeeks: e.target.checked }))}
-                  className="rounded border-slate-400 text-indigo-600 focus:ring-indigo-500"
-                />
-                Ocultar semanas vazias
-              </label>
+               {/* Opções de visualização mensal aqui */}
             </div>
           )}
 
